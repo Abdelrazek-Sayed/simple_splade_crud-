@@ -1,0 +1,76 @@
+version: '3.8'
+services:
+
+  php:
+    build:
+      args:
+        user: Abdelrazek
+        uid: 1000
+      context: .
+      dockerfile: ./docker/Dockerfile
+    volumes:
+      - ./:/var/www/
+      - $HOME/.composer/:$HOME/.composer/
+    environment:
+      - "DB_HOST=mysql"
+      - "DB_DATABASE=learn_splade"
+      - "DB_USERNAME=learn_splade"
+      - "DB_PASSWORD=learn_splade"
+      - "REDIS_HOST=redis"
+      - "REDIS_PORT=6379"
+    networks:
+      - service-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: web-server-splade
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "2000:80"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d/
+    networks:
+      - service-network
+
+  mysql:
+    image: mariadb:10.5.8
+    volumes:
+      - mysqldata:/var/lib/mysql
+    environment:
+      - "MYSQL_ROOT_PASSWORD=learn_splade"
+      - "MYSQL_DATABASE=learn_splade"
+      - "MYSQL_USER=learn_splade"
+      - "MYSQL_PASSWORD=learn_splade"
+    ports:
+      - "3302:3306"
+    networks:
+      - service-network
+
+  phpmyadmin:
+    image: phpmyadmin
+    restart: always
+    ports:
+      - 2001:80
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=mysql
+      - UPLOAD_LIMIT=64M
+    networks:
+      - service-network
+  redis:
+    image: redis:4.0-alpine
+    command: redis-server --appendonly yes
+    ports:
+      - "6372:6379"
+    networks:
+      - service-network
+
+volumes:
+  mysqldata:
+
+
+networks:
+  service-network:
+    driver: bridge
